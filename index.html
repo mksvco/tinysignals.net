@@ -3,15 +3,274 @@
 <meta charset="utf8">
 <title>tinysignals</title>
 <meta name="description" content="tinysignals is a Boston-based music creative agency.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.min.js"> </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"> </script>
+
 
 <style>
-body { background-color: black; }
+@font-face {
+  font-family: "h2";
+  src: url("h2.woff2") format("woff2")
+}
+
+@font-face {
+  font-family: "h1";
+  src: url("h1.woff2") format("woff2")
+}
+
+body { background-color: black; color: white; margin: 10%; font-size: 1.5rem; line-height: 2rem; letter-spacing: -.8px;}
+.h1 { font-family: "h1", sans-serif; }
+.h2 { font-family: "h2", sans-serif; }
+a {color: white; text-decoration: none;}
+.h2 a {text-decoration: none;}
+.nl a { text-decoration: none; }
+.contact { text-decoration: underline; }
+#webgl-canvas { position: absolute; z-index: -9999; top: 0; left: 0}
 </style>
 
-<meta http-equiv="refresh" content="3; url=https://instagram.com/tinysignals" />
+<!-- <meta http-equiv="refresh" content="3; url=https://instagram.com/tinysignals" /> -->
 </head>
 
 
-<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;">
-<img style="max-width: 90%"  src="tiny.png" />
-</div>
+
+<img style="max-width: 20rem"  src="logofull.png" />
+
+<p class="h1">
+a full-service music management and marketing agency<br>
+based in Boston<br>
+</p>
+<p class="h1">
+<span class="h1 nl">current and previous clients:</span><br>
+<a href="https://www.instagram.com/the.maki/">Maki Adams</a><br>
+<a href="https://shstrmusic.com">SHSTR</a><br>
+<a href="https://nobodyscrush.com">xXNOBODYSCRUSHXx</a><br>
+<br>
+</p>
+<a class="h1 contact" href="mailto:ping@tinysignals.net">contact</a>
+
+<canvas id="webgl-canvas"></canvas>
+
+<!-- vertexShader -->
+<script id="js-vertex-shader" type="x-shader/x-vertex">
+attribute vec3 position;
+
+void main()	{
+  gl_Position = vec4(position, 1.0);
+}
+</script>
+
+<!-- fragmentShader -->
+<script id="js-fragment-shader" type="x-shader/x-fragment">
+precision highp float;
+uniform vec2 resolution;
+uniform float time;
+uniform float xScale;
+uniform float yScale;
+uniform float distortion;
+
+void main() {
+  vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
+  
+  float d = length(p) * distortion;
+  
+  float rx = p.x * (1.0 + d);
+  float gx = p.x;
+  float bx = p.x * (1.0 - d);
+
+  float r = 0.05 / abs(p.y + sin((rx + time) * xScale) * yScale);
+  float g = 0.05 / abs(p.y + sin((gx + time) * xScale) * yScale);
+  float b = 0.05 / abs(p.y + sin((bx + time) * xScale) * yScale);
+  
+  gl_FragColor = vec4(r, g, b, 1.0);
+}
+</script>
+
+<script type="text/javascript">
+	class Stage {
+  constructor() {
+    this.renderParam = {
+      clearColor: 0x666666,
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+
+    this.cameraParam = {
+      left: -1,
+      right: 1,
+      top: 1,
+      bottom: 1,
+      near: 0,
+      far: -1
+    };
+
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.geometry = null;
+    this.material = null;
+    this.mesh = null;
+
+    this.isInitialized = false;
+  }
+
+  init() {
+    this._setScene();
+    this._setRender();
+    this._setCamera();
+
+    this.isInitialized = true;
+  }
+
+  _setScene() {
+    this.scene = new THREE.Scene();
+  }
+
+  _setRender() {
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById("webgl-canvas")
+    });
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setClearColor(new THREE.Color(this.renderParam.clearColor));
+    this.renderer.setSize(this.renderParam.width, this.renderParam.height);
+  }
+
+  _setCamera() {
+    if (!this.isInitialized) {
+      this.camera = new THREE.OrthographicCamera(
+        this.cameraParam.left,
+        this.cameraParam.right,
+        this.cameraParam.top,
+        this.cameraParam.bottom,
+        this.cameraParam.near,
+        this.cameraParam.far
+      );
+    }
+    
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    this.camera.aspect = windowWidth / windowHeight;
+
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(windowWidth, windowHeight);
+  }
+
+  _render() {
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  onResize() {
+    this._setCamera();
+  }
+
+  onRaf() {
+    this._render();
+  }
+}
+
+class Mesh {
+  constructor(stage) {
+    this.canvas = document.getElementById("webgl-canvas");
+    this.canvasWidth = this.canvas.width;
+    this.canvasHeight = this.canvas.height;
+
+    this.uniforms = {
+      resolution: { type: "v2", value: [ this.canvasWidth, this.canvasHeight ] },
+      time: { type: "f", value: 0.0 },
+      xScale: { type: "f", value: 1.0 },
+      yScale: { type: "f", value: 0.5 },
+      distortion: { type: "f", value: 0.2 }
+    };
+
+    this.stage = stage;
+
+    this.mesh = null;
+    
+    this.xScale = 1.0;
+    this.yScale = 0.5;
+    this.distortion = 0.2;
+  }
+
+  init() {
+    this._setMesh();
+  }
+
+  _setMesh() {
+    const position = [
+      -1.0, -1.0, 0.0,
+       1.0, -1.0, 0.0,
+      -1.0,  1.0, 0.0,
+       1.0, -1.0, 0.0,
+      -1.0,  1.0, 0.0,
+       1.0,  1.0, 0.0
+    ];
+
+    const positions = new THREE.BufferAttribute(new Float32Array(position), 3);
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", positions);
+
+    const material = new THREE.RawShaderMaterial({
+      vertexShader: document.getElementById("js-vertex-shader").textContent,
+      fragmentShader: document.getElementById("js-fragment-shader").textContent,
+      uniforms: this.uniforms,
+      side: THREE.DoubleSide
+    });
+
+    this.mesh = new THREE.Mesh(geometry, material);
+
+    this.stage.scene.add(this.mesh);
+  }
+  
+  _render() {
+    this.uniforms.time.value += 0.01;
+  }
+
+  _setGui() {
+    const parameter = {
+      xScale: this.xScale,
+      yScale: this.yScale,
+      distortion: this.distortion
+    }
+    const gui = new dat.GUI();
+    gui.add(parameter, "xScale", 0.00, 5.00, 0.01).onChange((value) => {
+      this.mesh.material.uniforms.xScale.value = value;
+    });
+    gui.add(parameter, "yScale", 0.00, 1.00, 0.01).onChange((value) => {
+      this.mesh.material.uniforms.yScale.value = value;
+    });
+    gui.add(parameter, "distortion", 0.001, 0.100, 0.001).onChange((value) => {
+      this.mesh.material.uniforms.distortion.value = value;
+    });
+  }
+
+  onRaf() {
+    this._render();
+  }
+}
+
+(() => {
+  const stage = new Stage();
+
+  stage.init();
+
+  const mesh = new Mesh(stage);
+
+  mesh.init();
+
+  window.addEventListener("resize", () => {
+    stage.onResize();
+  });
+
+  const _raf = () => {
+    window.requestAnimationFrame(() => {
+      stage.onRaf();
+      mesh.onRaf();
+
+      _raf();
+    });
+  };
+
+  _raf();
+})();
+</script>
