@@ -21,6 +21,7 @@
 body { background-color: black; color: white; margin: 10%; font-size: 1.5rem; line-height: 2rem; letter-spacing: -.8px; }
 .h1 { font-family: "h1", sans-serif; }
 .h2 { font-family: "h2", sans-serif; }
+.no {orphans: 3;}
 a {color: white; text-decoration: none;}
 .h2 a {text-decoration: none;}
 .nl a { text-decoration: none; }
@@ -28,7 +29,7 @@ a {color: white; text-decoration: none;}
 #webgl-canvas { position: absolute; z-index: -9999; top: 0; left: 0}
 </style>
 
-<!-- <meta http-equiv="refresh" content="3; url=https://instagram.com/tinysignals" /> -->
+<meta name="msvalidate.01" content="8810EC1E8D470E631DA6727E65665743" />
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-SXSRKGT0Z2"></script>
 <script>
@@ -45,7 +46,7 @@ a {color: white; text-decoration: none;}
 <img style="max-width: 20rem"  src="logofull.png" />
 
 <p class="h1">
-a full-service music management and marketing agency<br>
+<span class="no">a full-service music management and marketing agency</span><br>
 based in Boston<br>
 </p>
 <p class="h1">
@@ -186,7 +187,7 @@ class Mesh {
     this.uniforms = {
       resolution: { type: "v2", value: [ this.canvasWidth, this.canvasHeight ] },
       time: { type: "f", value: 0.0 },
-      xScale: { type: "f", value: 1.0 },
+      xScale: { type: "f", value: 0.75 },
       yScale: { type: "f", value: 0.5 },
       distortion: { type: "f", value: 0.1 }
     };
@@ -197,7 +198,7 @@ class Mesh {
     
     this.xScale = 1.0;
     this.yScale = 0.5;
-    this.distortion = 0.2;
+    this.distortion = 0.1;
   }
 
   init() {
